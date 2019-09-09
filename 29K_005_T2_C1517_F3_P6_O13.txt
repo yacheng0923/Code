@@ -1,0 +1,65 @@
+//29K_005_T2_C1517_F3_P6_O13
+
+input:C1(9),
+      I1(12),
+      O1(55),O2(130),O3(200),O4(50);
+     
+Input:Ps(256),Pz(284);
+vars:PositionSizing(1);
+{Position Sizing}
+if Highest(high,Ps)-Lowest(low,Ps)>Pz then PositionSizing=1 else PositionSizing=2;
+
+{----------Condition1----------}
+vars:CDP(0),AH(0),NH(0),NL(0),AL(0);
+if _NthBarInSession=1 then begin
+value11 = Highest(close,C1);
+value12= lowest(close,C1);
+value13 = close[1];
+CDP = (value11 +value12+2*value13 )*0.25;
+AH = CDP+(value11 -value12);
+NH = 2*CDP-value12;
+AL = CDP-(value11 -value12);
+NL = 2*CDP-value11;
+end;
+condition1=close>=NH and close<AH;
+condition2=close<=NL and close>AL;
+
+
+{----------Condition2----------}
+vars:TClose(0),OL(0),OH(0);
+if time=CalcTime(sess2starttime,barinterval) then TClose=close[1];
+if time=CalcTime(sess1starttime,barinterval) then begin
+OL=l;OH=h;
+end;
+condition3=OH>TClose*1.003 and CountIf(c>o,_NthBarInSession)>CountIf(c<o,_NthBarInSession);
+condition4=OL<TClose*0.997 and CountIf(c<o,_NthBarInSession)>CountIf(c>o,_NthBarInSession);
+
+
+{----------CombinCondition----------}
+condition5=condition1 and condition3;
+condition6=condition2 and condition4;
+
+
+{----------Filter----------}
+condition7=true;
+if EntriesToday(D)<2 and condition7 then condition7=true else condition7=false;
+
+
+
+{----------ExecuteIn----------}
+vars:BuyPriceIn(0),SellPriceIn(0);
+if _NthBarInSession=1 then begin
+BuyPriceIn=_lowSession(1)+(_highSession(1)-_lowSession(1))*1.382;
+SellPriceIn=_highSession(1)-(_highSession(1)-_lowSession(1))*1.382;
+end;
+if MP<=0 and condition5 and condition7 and (barssinceexit(1)>=I1 or totaltrades=0) then buy PositionSizing share next bar at BuyPriceIn stop;
+if MP>=0 and condition6 and condition7 and (barssinceexit(1)>=I1 or totaltrades=0) then sellshort PositionSizing share next bar at SellPriceIn stop;
+
+
+{----------ExecuteOut----------}
+if marketPosition > 0 then sell("s_0l") all share next bar at iff(positionprofit(1)>0,EntryPrice-O1,entryprice-O2/1.5) stop;
+if marketPosition < 0 then buytocover("b_0l") all share next bar at iff(positionprofit(1)>0,EntryPrice+O1,entryprice+O2/1.5) stop;
+if marketPosition < 0 and (_highSession(0)-_lowSession(0))>O3 then buytocover("b_03") all share next bar at _lowSession(0)+O4 stop;
+if marketPosition > 0 and (_highSession(0)-_lowSession(0))>O3 then sell("s_03") all share next bar at _highSession(0)-O4 stop;
+
+_ShowStrategyName2;

@@ -1,0 +1,51 @@
+//19K_004_T2_C78_F3_P5_O16
+
+input:C1(8),C2(7),
+      I1(10),I2(27),I3(23),I4(12);
+      
+Input:Ps(303),Pz(235);
+vars:PositionSizing(1);
+{Position Sizing}
+if Highest(high,Ps)-Lowest(low,Ps)>Pz then PositionSizing=1 else PositionSizing=2;
+
+{----------Condition1----------}
+vars:avgUpDn1(0),avg_avgUpDn1(0),avgUpDn2(0),avg_avgUpDn2(0);
+avgUpDn1=(close-close[C1])/C1;
+avg_avgUpDn1=average(AvgUpDn1,C1);
+avgUpDn2=(close-close[C2])/C2;
+avg_avgUpDn2=average(AvgUpDn2,C2);
+condition1=AvgUpDn1<Avg_AvgUpDn1;
+condition2=AvgUpDn2>Avg_AvgUpDn2;
+
+
+{----------Condition2----------}
+condition3=close>minlist(_lowSession(1),_lowSession(2),_lowSession(3))+0.641*(maxlist(_highSession(1),_highSession(2),_highSession(3))-minlist(_lowSession(1),_lowSession(2),_lowSession(3)));
+condition4=close<minlist(_lowSession(1),_lowSession(2),_lowSession(3))+0.452*(maxlist(_highSession(1),_highSession(2),_highSession(3))-minlist(_lowSession(1),_lowSession(2),_lowSession(3)));
+
+
+{----------CombinCondition----------}
+condition5=condition1 and condition3;
+condition6=condition2 and condition4;
+
+
+{----------Filter----------}
+condition7=true;
+if EntriesToday(D)<3 and condition7 then condition7=true else condition7=false;
+
+
+
+{----------ExecuteIn----------}
+vars:BuyPriceIn(0),SellPriceIn(0);
+BuyPriceIn=Highest(high,I1);
+SellPriceIn=Lowest(low,I2);
+if MP<=0 and condition5 and condition7 and (barssinceexit(1)>=I3 or totaltrades=0) then buy PositionSizing share next bar at BuyPriceIn stop;
+if MP>=0 and condition6 and condition7 and (barssinceexit(1)>=I4 or totaltrades=0) then sellshort PositionSizing  share next bar at SellPriceIn stop;
+
+
+{----------ExecuteOut----------}
+if marketPosition > 0 and MaxProfitPoint>(close*0.015) then 
+sell("s_16") next bar entryprice-absvalue(positionprofit(1))/bigpointvalue+MaxProfitPoint stop;
+if marketPosition < 0 and MaxProfitPoint>(close*0.015) then 
+buytocover("b_16") next bar entryprice+absvalue(positionprofit(1))/bigpointvalue-MaxProfitPoint stop;
+
+_ShowStrategyName2;

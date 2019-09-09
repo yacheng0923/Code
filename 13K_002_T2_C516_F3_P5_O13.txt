@@ -1,0 +1,61 @@
+//13K_002_T2_C516_F3_P5_O13
+
+input:C1(0.2),
+      I1(38),I2(31),I3(13),
+      O1(21);
+      
+Input:Ps(373),Pz(221);
+vars:PositionSizing(1);
+{Position Sizing}
+if Highest(high,Ps)-Lowest(low,Ps)>Pz then PositionSizing=1 else PositionSizing=2;
+
+
+
+{----------Condition1----------}
+vars:HP(0),CP(0),LP(0);
+if _NthBarInSession=1 then begin
+HP=_lowSession(1)+(_highSession(1)-_lowSession(1))*1.382;
+CP=(_highSession(1)+_lowSession(1))/2;
+LP=_highSession(1)-(_highSession(1)-_lowSession(1))*1.382;
+end;
+condition1=close>=HP-(HP-CP)*C1;
+condition2=close<=LP+(CP-LP)*C1;
+
+
+{----------Condition2----------}
+vars:ATR(0);
+ATR=averagetruerange(10);
+value14=(ATR-ATR[10])/10;
+condition3=value14>avg(value14,2);
+condition4=value14>avg(value14,2);
+
+
+{----------CombinCondition----------}
+condition5=condition1 and condition3;
+condition6=condition2 and condition4;
+
+
+{----------Filter----------}
+condition7=true;
+if EntriesToday(D)<1 and condition7 then condition7=true else condition7=false;
+
+
+
+{----------ExecuteIn----------}
+vars:BuyPriceIn(0),SellPriceIn(0);
+BuyPriceIn=Highest(high,I1);
+SellPriceIn=Lowest(low,I1);
+if MP<=0 and condition5 and condition7 and (barssinceexit(1)>=I2 or totaltrades=0) then buy PositionSizing share next bar at BuyPriceIn stop;
+if MP>=0 and condition6 and condition7 and (barssinceexit(1)>=I3 or totaltrades=0) then sellshort PositionSizing share next bar at SellPriceIn stop;
+
+
+{----------ExecuteOut----------}
+var:LHvalue(0),SLvalue(0); 
+if MP<>MP[1] then begin
+ LHvalue=high;
+ SLvalue=low;
+end;
+if marketPosition > 0 and countif(high<LHvalue,O1)>=O1 then sell("s_13") all share next bar at market;
+if marketPosition < 0 and countif(low>SLvalue,O1)>=O1 then buytocover("b_13") all share next bar at market;
+
+_ShowStrategyName2;

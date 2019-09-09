@@ -1,0 +1,73 @@
+//13K_004_T2_C1520_F3_P6_O3713
+
+input:C1(13),
+      I1(33),
+      O1(80),O2(60),O3(50),O4(130),O5(13);
+
+Input:Ps(388),Pz(204);
+vars:PositionSizing(1);
+{Position Sizing}
+if Highest(high,Ps)-Lowest(low,Ps)>Pz then PositionSizing=1 else PositionSizing=2;
+
+{----------Condition1----------}
+vars:CDP(0),AH(0),NH(0),NL(0),AL(0);
+if _NthBarInSession=1 then begin
+value11 = Highest(close,C1);
+value12= lowest(close,C1);
+value13 = close[1];
+CDP = (value11 +value12+2*value13 )*0.25;
+AH = CDP+(value11 -value12);
+NH = 2*CDP-value12;
+AL = CDP-(value11 -value12);
+NL = 2*CDP-value11;
+end;
+condition1=close>=NH and close<AH;
+condition2=close<=NL and close>AL;
+
+
+{----------Condition2----------}
+vars:simO(0),simC(0),simH(0),simL(0),dir(0);
+simc=(H+C+O+L)/4;
+simO=(simO[1]+simc[1])/2;
+simh=maxlist(H,simO,simC);
+simL=minlist(L,simO,simC);
+if simc>=simo then dir=1 else dir=-1;
+condition3=dir=1;
+condition4=dir=-1;
+
+
+{----------CombinCondition----------}
+condition5=condition1 and condition3;
+condition6=condition2 and condition4;
+
+
+{----------Filter----------}
+condition7=true;
+if EntriesToday(D)<2 and condition7 then condition7=true else condition7=false;
+
+
+
+{----------ExecuteIn----------}
+vars:BuyPriceIn(0),SellPriceIn(0);
+if _NthBarInSession=1 then begin
+BuyPriceIn=_lowSession(1)+(_highSession(1)-_lowSession(1))*1.382;
+SellPriceIn=_highSession(1)-(_highSession(1)-_lowSession(1))*1.382;
+end;
+if MP<=0 and condition5 and condition7 and (barssinceexit(1)>=I1 or totaltrades=0) then buy PositionSizing share next bar at BuyPriceIn stop;
+if MP>=0 and condition6 and condition7 and (barssinceexit(1)>=I1 or totaltrades=0) then sellshort PositionSizing share next bar at SellPriceIn stop;
+
+
+{----------ExecuteOut----------}
+if marketPosition < 0 and (_highSession(0)-_lowSession(0))>O1 then buytocover("b_03") all share next bar at _lowSession(0)+O2 stop;
+if marketPosition > 0 and (_highSession(0)-_lowSession(0))>O1 then sell("s_03") all share next bar at _highSession(0)-O2 stop;
+if marketPosition > 0 and MaxProfitPoint>O3 then sell("s_07") all share next bar at _LongPercentTrailing(MaxProfitPoint,O4) stop;
+if marketPosition < 0 and MaxProfitPoint>O3 then buytocover("b_07") all share next bar at _ShortPercentTrailing(MaxProfitPoint,O4) stop;
+var:LHvalue(0),SLvalue(0); 
+if MP<>MP[1] then begin
+ LHvalue=high;
+ SLvalue=low;
+end;
+if marketPosition > 0 and countif(high<LHvalue,O5)>=O5 then sell("s_13") all share next bar at market;
+if marketPosition < 0 and countif(low>SLvalue,O5)>=O5 then buytocover("b_13") all share next bar at market;
+
+_ShowStrategyName2;

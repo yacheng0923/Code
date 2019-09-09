@@ -1,0 +1,56 @@
+//13K_001_T2_C417_F3_P3_O358
+
+input:I1(27),I2(35),
+      O1(100),O2(90),O3(150),O4(120),O5(80),O6(50);
+      
+Input:Ps(299),Pz(242);
+vars:PositionSizing(1);
+{Position Sizing}
+if Highest(high,Ps)-Lowest(low,Ps)>Pz then PositionSizing=1 else PositionSizing=2;
+
+{----------Condition1----------}
+if time=CalcTime(Sess1StartTime,1*barinterval) then value2=_highSession(0);
+if time=CalcTime(Sess1StartTime,1*barinterval) then value3=_lowSession(0);
+condition1=_lowSession(0)>=value3;
+condition2=_highSession(0)<=value2;
+
+
+{----------Condition2----------}
+vars:TClose(0),OL(0),OH(0);
+if time=CalcTime(sess2starttime,barinterval) then TClose=close[1];
+if time=CalcTime(sess1starttime,barinterval) then begin
+OL=l;OH=h;
+end;
+condition3=OH>TClose*1.003 and CountIf(c>o,_NthBarInSession)>CountIf(c<o,_NthBarInSession);
+condition4=OL<TClose*0.997 and CountIf(c<o,_NthBarInSession)>CountIf(c>o,_NthBarInSession);
+
+
+{----------CombinCondition----------}
+condition5=condition1 and condition3;
+condition6=condition2 and condition4;
+
+
+{----------Filter----------}
+condition7=true;
+if EntriesToday(D)<2 and condition7 then condition7=true else condition7=false;
+
+
+
+{----------ExecuteIn----------}
+vars:BuyPriceIn(0),SellPriceIn(0);
+BuyPriceIn=maxlist(_highSession(1),_highSession(0));
+SellPriceIn=minlist(_lowSession(1),_lowSession(0));
+if MP<=0 and condition5 and condition7 and (barssinceexit(1)>=I1 or totaltrades=0) then buy PositionSizing share next bar at BuyPriceIn stop;
+if MP>=0 and condition6 and condition7 and (barssinceexit(1)>=I2 or totaltrades=0) then sellshort PositionSizing share next bar at SellPriceIn stop;
+
+
+{----------ExecuteOut----------}
+if marketPosition < 0 and (_highSession(0)-_lowSession(0))>O1 then buytocover("b_03") all share next bar at _lowSession(0)+50 stop;
+if marketPosition > 0 and (_highSession(0)-_lowSession(0))>O2 then sell("s_03") all share next bar at _highSession(0)-50 stop;
+if marketPosition > 0 then sell("s_05") all share next bar at entryprice+O3 limit;
+if marketPosition < 0 then buytocover("b_05") all share next bar at entryprice-O4 limit;
+if marketPosition > 0 then sell("s_08") all share next bar at minlist(EntryPrice-O5,_lowSession(0)) stop;
+if marketPosition < 0 then buytocover("b_08") all share next bar at maxlist(EntryPrice+O6,_highSession(0)) stop;
+
+
+_ShowStrategyName2;

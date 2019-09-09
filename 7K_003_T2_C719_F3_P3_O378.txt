@@ -1,0 +1,57 @@
+//7K_003_T2_C719_F3_P3_O378
+
+Input:C1(49),C2(39),
+      I1(17),I2(25),I3(29),I4(22),
+      O1(85),O2(50),O3(135),O4(50);
+      
+Input:Ps(1123),Pz(200);
+vars:PositionSizing(1);
+{Position Sizing}
+if Highest(high,Ps)-Lowest(low,Ps)>Pz then PositionSizing=1 else PositionSizing=2;
+
+
+{----------Condition1----------}
+vars:avgUpDn1(0),avg_avgUpDn1(0),avgUpDn2(0),avg_avgUpDn2(0);
+avgUpDn1=(close-close[C1])/C1;
+avg_avgUpDn1=average(AvgUpDn1,C1);
+avgUpDn2=(close-close[C2])/C2;
+avg_avgUpDn2=average(AvgUpDn2,C2);
+condition1=AvgUpDn1<Avg_AvgUpDn1;
+condition2=AvgUpDn2>Avg_AvgUpDn2;
+
+
+{----------Condition2----------}
+variables: var0(0),var1(0),var2(0),var3(0);
+value15 = ParabolicSAR(0.02,0.2,var0,var1,var2,var3);
+condition3=var2=-1;
+condition4=var2=1;
+
+
+{----------CombinCondition----------}
+condition5=condition1 and condition3;
+condition6=condition2 and condition4;
+
+
+{----------Filter----------}
+condition7=true;
+if EntriesToday(D)<1 and condition7 then condition7=true else condition7=false;
+
+
+
+{----------ExecuteIn----------}
+vars:BuyPriceIn(0),SellPriceIn(0);
+BuyPriceIn=maxlist(_highSession(1),_highSession(0));
+SellPriceIn=minlist(_lowSession(1),_lowSession(0));
+if MP<=0 and condition5 and condition7 and (barssinceexit(1)>=I1 or totaltrades=0) then buy PositionSizing share next bar at BuyPriceIn stop;
+if MP>=0 and condition6 and condition7 and (barssinceexit(1)>=I2 or totaltrades=0) then sellshort PositionSizing share next bar at SellPriceIn stop;
+
+
+{----------ExecuteOut----------}
+if marketPosition < 0 and (_highSession(0)-_lowSession(0))>O1 then buytocover("b_03") all share next bar at _lowSession(0)+O2 stop;
+if marketPosition > 0 and (_highSession(0)-_lowSession(0))>O1 then sell("s_03") all share next bar at _highSession(0)-O2 stop;
+if marketPosition > 0 and MaxProfitPoint>O3 then sell("s_07") all share next bar at _LongPercentTrailing(MaxProfitPoint,O4) stop;
+if marketPosition < 0 and MaxProfitPoint>O3 then buytocover("b_07") all share next bar at _ShortPercentTrailing(MaxProfitPoint,O4) stop;
+if marketPosition > 0 then sell("s_08") all share next bar at minlist(EntryPrice-O4,_lowSession(0)) stop;
+if marketPosition < 0 then buytocover("b_08") all share next bar at maxlist(EntryPrice+O4,_highSession(0)) stop;
+
+_ShowStrategyName2;

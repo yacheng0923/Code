@@ -1,0 +1,64 @@
+//29K_003_T2_C614_F3_P6_O1313
+
+input:C1(31),C2(32),
+      I1(9),I2(12),
+      O1(100),O2(200),O3(50),O4(13);
+      
+Input:Ps(202),Pz(200);
+vars:PositionSizing(1);
+{Position Sizing}
+if Highest(high,Ps)-Lowest(low,Ps)>Pz then PositionSizing=1 else PositionSizing=2;
+
+
+{----------Condition1----------}
+condition1=(LinearRegAngleFC(c,C1)/90)*100>-70; 
+condition2=(LinearRegAngleFC(c,C2)/90)*100<30;
+
+
+{----------Condition2----------}
+vars:KP(0),Top(0),Dn(0);
+if _NthBarInSession=1 then begin
+KP=(_closesession(1)+_highSession(1)+_lowSession(1))/3;
+Top=KP*2-_lowSession(1);
+Dn=KP*2-_highSession(1);			
+end;
+condition3=close cross over Top;
+condition4=close cross under Dn;
+
+
+{----------CombinCondition----------}
+condition5=condition1 and condition3;
+condition6=condition2 and condition4;
+
+
+{----------Filter----------}
+condition7=true;
+if EntriesToday(D)<1 and condition7 then condition7=true else condition7=false;
+
+
+
+{----------ExecuteIn----------}
+vars:BuyPriceIn(0),SellPriceIn(0);
+if _NthBarInSession=1 then begin
+BuyPriceIn=_lowSession(1)+(_highSession(1)-_lowSession(1))*1.382;
+SellPriceIn=_highSession(1)-(_highSession(1)-_lowSession(1))*1.382;
+end;
+if MP<=0 and condition5 and condition7 and (barssinceexit(1)>=I1 or totaltrades=0) then buy PositionSizing share next bar at BuyPriceIn stop;
+if MP>=0 and condition6 and condition7 and (barssinceexit(1)>=I2 or totaltrades=0) then sellshort PositionSizing share next bar at SellPriceIn stop;
+
+
+{----------ExecuteOut----------}
+if marketPosition > 0 then sell("s_0l") all share next bar at iff(positionprofit(1)>0,EntryPrice-O1,entryprice-O1/1.5) stop;
+if marketPosition < 0 then buytocover("b_0l") all share next bar at iff(positionprofit(1)>0,EntryPrice+O1,entryprice+O1/1.5) stop;
+if marketPosition < 0 and (_highSession(0)-_lowSession(0))>O2 then buytocover("b_03") all share next bar at _lowSession(0)+O3 stop;
+if marketPosition > 0 and (_highSession(0)-_lowSession(0))>O2 then sell("s_03") all share next bar at _highSession(0)-O3 stop;
+var:LHvalue(0),SLvalue(0); 
+if MP<>MP[1] then begin
+ LHvalue=high;
+ SLvalue=low;
+end;
+if marketPosition > 0 and countif(high<LHvalue,O4)>=O4 then sell("s_13") all share next bar at market;
+if marketPosition < 0 and countif(low>SLvalue,O4)>=O4 then buytocover("b_13") all share next bar at market;
+
+
+_ShowStrategyName2;

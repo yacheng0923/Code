@@ -1,0 +1,54 @@
+//13K_005_T2_C817_F3_P6_O916
+
+input:I1(23),I2(19),
+      O1(85),O2(140);
+
+Input:Ps(460),Pz(311);
+vars:PositionSizing(1);
+{Position Sizing}
+if Highest(high,Ps)-Lowest(low,Ps)>Pz then PositionSizing=1 else PositionSizing=2;
+
+
+{----------Condition1----------}
+condition1=close>minlist(_lowSession(1),_lowSession(2),_lowSession(3))+0.618*(maxlist(_highSession(1),_highSession(2),_highSession(3))-minlist(_lowSession(1),_lowSession(2),_lowSession(3)));
+condition2=close<minlist(_lowSession(1),_lowSession(2),_lowSession(3))+0.382*(maxlist(_highSession(1),_highSession(2),_highSession(3))-minlist(_lowSession(1),_lowSession(2),_lowSession(3)));
+
+
+{----------Condition2----------}
+vars:TClose(0),OL(0),OH(0);
+if time=CalcTime(sess2starttime,barinterval) then TClose=close[1];
+if time=CalcTime(sess1starttime,barinterval) then begin
+OL=l;OH=h;
+end;
+condition3=OH>TClose*1.003 and CountIf(c>o,_NthBarInSession)>CountIf(c<o,_NthBarInSession);
+condition4=OL<TClose*0.997 and CountIf(c<o,_NthBarInSession)>CountIf(c>o,_NthBarInSession);
+
+
+{----------CombinCondition----------}
+condition5=condition1 and condition3;
+condition6=condition2 and condition4;
+
+
+{----------Filter----------}
+condition7=true;
+if EntriesToday(D)<1 and condition7 then condition7=true else condition7=false;
+
+
+
+{----------ExecuteIn----------}
+vars:BuyPriceIn(0),SellPriceIn(0);
+if _NthBarInSession=1 then begin
+BuyPriceIn=_lowSession(1)+(_highSession(1)-_lowSession(1))*1.382;
+SellPriceIn=_highSession(1)-(_highSession(1)-_lowSession(1))*1.382;
+end;
+if MP<=0 and condition5 and condition7 and (barssinceexit(1)>=I1 or totaltrades=0) then buy PositionSizing share next bar at BuyPriceIn stop;
+if MP>=0 and condition6 and condition7 and (barssinceexit(1)>=I2 or totaltrades=0) then sellshort PositionSizing share next bar at SellPriceIn stop;
+
+
+{----------ExecuteOut----------}
+if marketPosition > 0 then sell("s_9") all share next bar at (entryprice-O1+MaxProfitPoint/3) stop;
+if marketPosition < 0 then buytocover("b_9") all share next bar at (entryprice+O1-MaxProfitPoint/3) stop;
+if marketPosition > 0 and MaxProfitPoint>O2 then sell("s_16") next bar entryprice-absvalue(positionprofit(1))/bigpointvalue+MaxProfitPoint stop;
+if marketPosition < 0 and MaxProfitPoint>O2 then buytocover("b_16") next bar entryprice+absvalue(positionprofit(1))/bigpointvalue+MaxProfitPoint stop;
+
+_ShowStrategyName2;

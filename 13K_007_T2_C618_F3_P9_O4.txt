@@ -1,0 +1,51 @@
+//13K_007_T2_C618_F3_P9_O4
+input:C1(56),C2(11),
+      I1(30),I2(30),I3(41),i4(41),
+      O1(47),O2(33),O3(50),O4(50);
+
+Input:Ps(163),Pz(359);
+vars:PositionSizing(1);
+{Position Sizing}
+if Highest(high,Ps)-Lowest(low,Ps)>Pz then PositionSizing=1 else PositionSizing=2;
+
+
+{----------Condition1----------}
+condition1=(LinearRegAngleFC(c,C1)/90)*100>-70; 
+condition2=(LinearRegAngleFC(c,C1)/90)*100<30;
+
+
+{----------Condition2----------}
+vars:DecayHighvalue(0),IncreaseLowValue(0),HRatio(0),LRatio(0);
+DecayHighvalue=highest(h[1],C2);
+IncreaseLowValue=lowest(l[1],C2);
+HRatio=(1-0.01)*DecayHighvalue[1]+0.01*IncreaseLowValue[1];
+LRatio=(1-0.01)*IncreaseLowValue[1]+0.01*DecayHighvalue[1];
+condition3=c>_lowSession(1) and (c cross over HRatio or c cross over LRatio);
+condition4=c<_highSession(1) and (c cross under HRatio or c cross under LRatio);
+
+
+{----------CombinCondition----------}
+condition5=condition1 and condition3;
+condition6=condition2 and condition4;
+
+
+{----------Filter----------}
+condition7=true;
+if EntriesToday(D)<1 and condition7 then condition7=true else condition7=false;
+
+{----------ExecuteIn----------}
+vars:BuyPriceIn(0),SellPriceIn(0);
+vars:PPH(0),PPL(0);
+PPH=((((H+L+C)/3)*2)-L);
+PPL=((((H+L+C)/3)*2)-H);
+BuyPriceIn=highest(PPH,I1);
+SellPriceIn=Lowest(PPL,I2);
+if MP<=0 and condition5 and condition7 and (barssinceexit(1)>=I3 or totaltrades=0) then buy PositionSizing share next bar at BuyPriceIn stop;
+if MP>=0 and condition6 and condition7 and (barssinceexit(1)>=i4 or totaltrades=0) then sellshort PositionSizing share next bar at SellPriceIn stop;
+
+
+{----------ExecuteOut----------}
+if marketPosition > 0 then sell("s_04") all share next bar at _highSession(0)-O1 stop;
+if marketPosition < 0 then buytocover("b_04") all share next bar at _lowSession(0)+O2 stop;
+
+_ShowStrategyName2;
